@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "latex-compile-service"
+version = "0.1.0"
+description = "A self-hosted LaTeX compilation REST service with Celery background jobs and Docker support."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+classifiers = [
+    "Framework :: FastAPI",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools"
+]
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
+
+dependencies = [
+    "fastapi>=0.112.0",
+    "uvicorn[standard]>=0.23.0",
+    "gunicorn>=22.1.0",
+    "celery>=5.5.0",
+    "redis>=4.8.0",
+    "python-multipart>=0.0.6",
+    "slowapi>=0.1.4",
+    "loguru>=0.7.0",
+    "prometheus-client>=0.16.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.26.0",
+    "pre-commit>=3.4.0"
+]

@@ -1,0 +1,12 @@
+fastapi>=0.112.0
+uvicorn[standard]>=0.23.0
+gunicorn>=22.1.0
+celery>=5.5.0
+redis>=4.8.0
+python-multipart>=0.0.6
+slowapi>=0.1.4
+loguru>=0.7.0
+prometheus-client>=0.16.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.0

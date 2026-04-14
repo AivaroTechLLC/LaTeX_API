@@ -1,0 +1,45 @@
+services:
+  api:
+    build: .
+    container_name: latex-compile-service-api
+    ports:
+      - '8000:8000'
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/app/data
+    command: /opt/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker latex_compile_service.main:app --bind 0.0.0.0:8000 --workers 2 --log-level info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    build: .
+    container_name: latex-compile-service-worker
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/app/data
+    command: /opt/venv/bin/celery -A latex_compile_service.celery_app.celery worker --loglevel=info --concurrency=1
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: latex-compile-service-redis
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
