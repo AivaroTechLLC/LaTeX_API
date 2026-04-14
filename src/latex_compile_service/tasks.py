@@ -7,7 +7,6 @@ from latex_compile_service.config import get_settings
 from latex_compile_service.services.compile_service import LatexCompiler
 
 logger = get_task_logger(__name__)
-settings = get_settings()
 
 
 @celery.task(bind=True, name="latex_compile_service.compile_tex")
@@ -20,6 +19,7 @@ def compile_tex_task(
     shell_escape: bool,
     timeout: int,
 ) -> dict:
+    settings = get_settings()
     logger.info("Starting LaTeX compile task for %s", filename)
     compiler = LatexCompiler(settings)
     content = base64.b64decode(payload_b64)

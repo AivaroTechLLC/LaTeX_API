@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 from celery import Celery
-from latex_compile_service.config import get_settings
 
-settings = get_settings()
+try:
+    from latex_compile_service.config import get_settings
+
+    settings = get_settings()
+except Exception as exc:
+    raise RuntimeError(
+        "Failed to initialize Celery configuration for latex_compile_service. "
+        "Check environment variables, .env file, and project imports."
+    ) from exc
 
 celery = Celery(
     "latex_compile_service",
