@@ -1,4 +1,6 @@
-FROM texlive/texlive:latest AS runtime
+# Pin to a specific TeX Live release to prevent silent upstream changes.
+# To update: docker pull texlive/texlive:<tag> and update the digest below.
+FROM texlive/texlive@sha256:3172ec074576553be07025c32403229a69169e86030c6b6786b7969d14e94de4 AS runtime
 
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \

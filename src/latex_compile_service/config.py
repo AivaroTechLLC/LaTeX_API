@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,8 @@ class Settings(BaseSettings):
 
     max_upload_size_mb: int = Field(20)
     compile_timeout: int = Field(120)
+    max_memory_mb: int = Field(512)
+    max_log_chars: int = Field(100_000)
     rate_limit: str = Field("20/minute")
     default_engine: str = Field("pdflatex")
     allow_shell_escape: bool = Field(False)
@@ -26,9 +28,30 @@ class Settings(BaseSettings):
     allowed_engines: list[str] = Field(["pdflatex", "xelatex", "lualatex"])
     allowed_extensions: list[str] = Field([".tex", ".zip"])
 
+    @field_validator("allowed_engines", mode="before")
+    @classmethod
+    def parse_allowed_engines(cls, v):
+        if isinstance(v, str):
+            return [engine.strip() for engine in v.split(",") if engine.strip()]
+        return v
+
+    @field_validator("allowed_extensions", mode="before")
+    @classmethod
+    def parse_allowed_extensions(cls, v):
+        if isinstance(v, str):
+            return [ext.strip() for ext in v.split(",") if ext.strip()]
+        return v
+
     data_dir: Path = Field(Path("/app/data"))
     latexmk_binary: str = Field("latexmk")
     cors_origins: list[str] = Field(["*"])
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

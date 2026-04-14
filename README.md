@@ -1,5 +1,7 @@
 # LaTeX Compile Service
 
+[![CI](https://github.com/AivaroTechLLC/LaTeX_API/actions/workflows/ci.yml/badge.svg)](https://github.com/AivaroTechLLC/LaTeX_API/actions/workflows/ci.yml)
+
 A self-hosted LaTeX-as-a-Service REST API for compiling single `.tex` files and full LaTeX projects. Built with FastAPI, Celery, Redis, and a full TeX Live container.
 
 ## Key features

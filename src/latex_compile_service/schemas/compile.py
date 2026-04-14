@@ -1,13 +1,24 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+
+class LaTeXError(BaseModel):
+    type: Literal["error", "warning"] = Field(
+        ..., description="Whether this is a hard error or a warning"
+    )
+    message: str = Field(..., description="The error or warning message text")
+    line: int | None = Field(None, description="Source line number if known")
+    file: str | None = Field(None, description="Source file name if known")
 
 
 class CompileResponse(BaseModel):
     status: str = Field(..., description="Compilation status: success or failure")
     pdf: str | None = Field(None, description="Base64-encoded PDF content if compilation succeeds")
     log: str = Field(..., description="Raw latexmk log output")
-    errors: list[dict] = Field(default_factory=list, description="Parsed LaTeX errors and warnings")
+    errors: list[LaTeXError] = Field(default_factory=list, description="Parsed LaTeX errors and warnings")
 
 
 class TaskSubmissionResponse(BaseModel):
@@ -21,5 +32,5 @@ class TaskStatusResponse(BaseModel):
     status: str | None = Field(None, description="Compilation status if the task is complete")
     pdf: str | None = Field(None, description="Base64-encoded PDF content if compilation succeeded")
     log: str | None = Field(None, description="Raw latexmk log output returned by the task")
-    errors: list[dict] = Field(default_factory=list, description="Parsed LaTeX errors and warnings if available")
+    errors: list[LaTeXError] = Field(default_factory=list, description="Parsed LaTeX errors and warnings if available")
     detail: str | None = Field(None, description="Optional failure detail for task errors")

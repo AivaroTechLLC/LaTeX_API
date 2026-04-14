@@ -9,9 +9,9 @@ def test_parse_latex_errors_simple():
     log = "! LaTeX Error: Something went wrong\nl.12 Some bad input"
     errors = parse_latex_errors(log)
     assert len(errors) >= 1
-    assert any(entry["type"] == "error" for entry in errors)
-    assert any("LaTeX Error" in entry["message"] for entry in errors)
-    assert any(entry["line"] == 12 for entry in errors)
+    assert any(entry.type == "error" for entry in errors)
+    assert any("LaTeX Error" in entry.message for entry in errors)
+    assert any(entry.line == 12 for entry in errors)
 
 
 def test_parse_latex_errors_extended_patterns():
@@ -25,11 +25,11 @@ def test_parse_latex_errors_extended_patterns():
     )
     errors = parse_latex_errors(log)
 
-    assert any(e["type"] == "error" and "Package foo Error" in e["message"] for e in errors)
-    assert any(e["type"] == "warning" and "LaTeX Warning: Reference" in e["message"] for e in errors)
-    assert any(e["type"] == "error" and e["file"] == "./main.tex" and e["line"] == 42 for e in errors)
-    assert any(e["type"] == "error" and "Undefined control sequence" in e["message"] for e in errors)
-    assert any(e["type"] == "error" and "Runaway argument" in e["message"] for e in errors)
+    assert any(e.type == "error" and "Package foo Error" in e.message for e in errors)
+    assert any(e.type == "warning" and "LaTeX Warning: Reference" in e.message for e in errors)
+    assert any(e.type == "error" and e.file == "./main.tex" and e.line == 42 for e in errors)
+    assert any(e.type == "error" and "Undefined control sequence" in e.message for e in errors)
+    assert any(e.type == "error" and "Runaway argument" in e.message for e in errors)
 
 
 def test_is_within_directory_safe():

@@ -16,7 +16,9 @@ services:
     command: ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker latex_compile_service.main:app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --log-level info"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      # Use the fast liveness probe so Docker can verify the container is healthy
+      # without depending on Redis or latexmk readiness.
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health/live || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

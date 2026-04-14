@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import re
 
+from latex_compile_service.schemas.compile import LaTeXError
 
-def parse_latex_errors(log: str) -> list[dict]:
-    errors: list[dict] = []
-    previous_error: dict | None = None
+
+def parse_latex_errors(log: str) -> list[LaTeXError]:
+    errors: list[LaTeXError] = []
+    previous_error: LaTeXError | None = None
 
     file_line_re = re.compile(r"^(?P<file>.+?):(?P<line>\d+):\s*(?P<message>.+)$")
     latex_error_re = re.compile(r"^!\s*(?P<message>LaTeX Error: .+)$")
@@ -20,13 +22,13 @@ def parse_latex_errors(log: str) -> list[dict]:
         type_: str = "error",
         line: int | None = None,
         file: str | None = None,
-    ) -> dict:
-        error = {
-            "type": type_,
-            "message": message.strip(),
-            "line": line,
-            "file": file,
-        }
+    ) -> LaTeXError:
+        error = LaTeXError(
+            type=type_,
+            message=message.strip(),
+            line=line,
+            file=file,
+        )
         errors.append(error)
         return error
 
@@ -74,11 +76,11 @@ def parse_latex_errors(log: str) -> list[dict]:
             continue
 
         if line_context_match and previous_error is not None:
-            if previous_error["line"] is None:
-                previous_error["line"] = int(line_context_match.group("line"))
+            if previous_error.line is None:
+                previous_error.line = int(line_context_match.group("line"))
             message_suffix = line_context_match.group("message").strip()
             if message_suffix:
-                previous_error["message"] = f"{previous_error['message']} {message_suffix}".strip()
+                previous_error.message = f"{previous_error.message} {message_suffix}".strip()
             continue
 
         if text.startswith("!"):

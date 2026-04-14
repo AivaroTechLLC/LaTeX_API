@@ -13,8 +13,7 @@ from latex_compile_service.config import Settings
 router = APIRouter()
 
 
-@router.get("/health")
-async def health(settings: Settings = Depends(get_settings_dep)) -> JSONResponse:
+async def _get_readiness_status(settings: Settings) -> tuple[int, dict[str, str]]:
     redis_status = "ok"
     latexmk_status = "ok"
 
@@ -35,7 +34,23 @@ async def health(settings: Settings = Depends(get_settings_dep)) -> JSONResponse
         "latexmk": latexmk_status,
     }
 
+    return status_code, health_data
+
+
+@router.get("/health/live")
+async def liveness() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@router.get("/health/ready")
+async def readiness(settings: Settings = Depends(get_settings_dep)) -> JSONResponse:
+    status_code, health_data = await _get_readiness_status(settings)
     return JSONResponse(status_code=status_code, content=health_data)
+
+
+@router.get("/health")
+async def health(settings: Settings = Depends(get_settings_dep)) -> JSONResponse:
+    return await readiness(settings)
 
 
 @router.get("/metrics", response_class=PlainTextResponse)

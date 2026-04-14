@@ -18,3 +18,9 @@ repos:
     hooks:
       - id: isort
         language_version: python3.12
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.16.0
+    hooks:
+      - id: hadolint
+        files: ^Dockerfile$

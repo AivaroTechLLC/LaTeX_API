@@ -34,7 +34,7 @@ class LatexCompiler:
                 archive_path.unlink(missing_ok=True)
                 if not main_tex:
                     raise ValueError("main_tex is required for ZIP projects.")
-                main_file = workspace_path / main_tex
+                main_file = self._validate_main_tex_path(workspace_path, main_tex)
             else:
                 main_file = archive_path
 
@@ -53,13 +53,17 @@ class LatexCompiler:
             if pdf_path.exists():
                 pdf_b64 = base64.b64encode(pdf_path.read_bytes()).decode("utf-8")
 
-            errors = parse_latex_errors(result["log"])
+            log = result["log"]
+            if len(log) > self.settings.max_log_chars:
+                log = log[-self.settings.max_log_chars:]
+                log = f"[log truncated to last {self.settings.max_log_chars} chars]\n" + log
+            errors = parse_latex_errors(log)
             status = "success" if pdf_b64 and result["returncode"] == 0 else "failure"
 
             return {
                 "status": status,
                 "pdf": pdf_b64,
-                "log": result["log"],
+                "log": log,
                 "errors": errors,
             }
 
@@ -124,11 +128,25 @@ class LatexCompiler:
             import resource
 
             cpu_limit = min(self.settings.compile_timeout, 120)
-            memory_limit = 512 * 1024 * 1024
+            memory_limit = self.settings.max_memory_mb * 1024 * 1024
             resource.setrlimit(resource.RLIMIT_CPU, (cpu_limit, cpu_limit))
             resource.setrlimit(resource.RLIMIT_AS, (memory_limit, memory_limit))
         except Exception:
             pass
+
+    @staticmethod
+    def _validate_main_tex_path(workspace: Path, main_tex: str) -> Path:
+        candidate = (workspace / main_tex).resolve()
+        workspace_resolved = workspace.resolve()
+        if workspace_resolved not in candidate.parents and candidate != workspace_resolved:
+            raise ValueError(
+                f"main_tex path '{main_tex}' escapes the project workspace."
+            )
+        if candidate.suffix.lower() != ".tex":
+            raise ValueError(
+                f"main_tex must reference a .tex file, got: '{main_tex}'"
+            )
+        return candidate
 
     def _extract_zip(self, archive_path: Path, destination: Path) -> None:
         with zipfile.ZipFile(archive_path, "r") as archive:

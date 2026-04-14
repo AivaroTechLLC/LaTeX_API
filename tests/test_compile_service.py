@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import base64
+import io
 import subprocess
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -68,3 +70,23 @@ def test_compile_source_bytes_calls_run_latexmk_and_returns_pdf(tmp_path, monkey
     assert result["status"] == "success"
     assert result["pdf"] == base64.b64encode(b"PDFDATA").decode("utf-8")
     assert "Compilation complete" in result["log"]
+
+
+def test_compile_source_bytes_rejects_escaped_main_tex(monkeypatch):
+    settings = DummySettings()
+    compiler = LatexCompiler(settings=settings)
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, mode="w") as archive:
+        archive.writestr("valid.tex", "\\documentclass{article}\\begin{document}Hello\\end{document}")
+    zip_bytes = buf.getvalue()
+
+    with pytest.raises(ValueError, match=r"main_tex path '../escape.tex' escapes the project workspace"):
+        compiler.compile_source_bytes(
+            filename="project.zip",
+            content=zip_bytes,
+            main_tex="../escape.tex",
+            engine="pdflatex",
+            shell_escape=False,
+            timeout=10,
+        )

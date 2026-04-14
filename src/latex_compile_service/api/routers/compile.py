@@ -133,18 +133,17 @@ def _build_task_status_response(task_id: str, task: AsyncResult) -> TaskStatusRe
     return TaskStatusResponse(**data)
 
 
-settings = get_settings()
+_RATE_LIMIT = get_settings().rate_limit
 
 
 @router.post("/compile", response_model=CompileResponse)
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(_RATE_LIMIT)
 async def compile_document(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
     limiter: Limiter = Depends(get_limiter),
     api_key: str = Depends(api_key_auth),
 ) -> CompileResponse:
-    assert limiter is not None
     try:
         task = compile_tex_task.apply_async(
             args=[
@@ -185,14 +184,13 @@ async def compile_document(
 
 
 @router.post("/compile/async", response_model=TaskSubmissionResponse)
-@limiter.limit(lambda: settings.rate_limit)
+@limiter.limit(_RATE_LIMIT)
 async def submit_compile_job(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
     limiter: Limiter = Depends(get_limiter),
     api_key: str = Depends(api_key_auth),
 ) -> TaskSubmissionResponse:
-    assert limiter is not None
     task = compile_tex_task.apply_async(
         args=[
             compile_request.filename,

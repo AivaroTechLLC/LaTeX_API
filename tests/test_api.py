@@ -9,7 +9,7 @@ from latex_compile_service.app import app
 client = TestClient(app)
 
 
-def test_health_endpoint(monkeypatch):
+def test_health_ready_endpoint(monkeypatch):
     mock_client = MagicMock()
     mock_client.ping = AsyncMock(return_value=True)
 
@@ -26,13 +26,19 @@ def test_health_endpoint(monkeypatch):
     monkeypatch.setattr(aioredis, "from_url", lambda url: AsyncContextManager(mock_client))
     monkeypatch.setattr(shutil, "which", lambda path: "latexmk")
 
-    response = client.get("/api/v1/health")
+    response = client.get("/api/v1/health/ready")
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["redis"] == "ok"
     assert payload["latexmk"] == "ok"
     assert response.json()["status"] == "ok"
+
+
+def test_health_live_endpoint():
+    response = client.get("/api/v1/health/live")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_compile_async_requires_api_key():
