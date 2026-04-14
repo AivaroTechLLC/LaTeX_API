@@ -7,10 +7,13 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      worker:
+        condition: service_healthy
     volumes:
       - ./data:/app/data
-    command: /opt/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker latex_compile_service.main:app --bind 0.0.0.0:8000 --workers 2 --log-level info
+    command: ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker latex_compile_service.main:app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --log-level info"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
@@ -25,11 +28,18 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
+      redis:
+        condition: service_started
     volumes:
       - ./data:/app/data
     command: /opt/venv/bin/celery -A latex_compile_service.celery_app.celery worker --loglevel=info --concurrency=1
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/venv/bin/celery -A latex_compile_service.celery_app.celery inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 20s
 
   redis:
     image: redis:7-alpine

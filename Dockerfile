@@ -25,4 +25,4 @@ USER appuser
 EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "latex_compile_service.main:app", "--bind", "0.0.0.0:8000", "--workers", "2", "--log-level", "info"]
+CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker latex_compile_service.main:app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --log-level info"]

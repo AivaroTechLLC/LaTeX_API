@@ -1,19 +1,22 @@
 import asyncio
 import base64
+import concurrent.futures
+import functools
 from celery.result import AsyncResult
 from dataclasses import dataclass
-from functools import wraps
 from pathlib import Path
 from typing import Any
 
 from celery.exceptions import CeleryError
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from slowapi import Limiter
 from loguru import logger
 
 from latex_compile_service.api.dependencies import get_settings_dep
 from latex_compile_service.celery_app import celery
-from latex_compile_service.config import Settings
+from latex_compile_service.config import Settings, get_settings
 from latex_compile_service.core.security import api_key_auth, virus_scan_stub
+from latex_compile_service.limiter import limiter
 from latex_compile_service.schemas.compile import (
     CompileResponse,
     TaskStatusResponse,
@@ -101,21 +104,8 @@ async def validate_compile_request(
     )
 
 
-def _get_limiter(request: Request):
+def get_limiter(request: Request) -> Limiter:
     return request.app.state.limiter
-
-
-def rate_limit_route(route_func):
-    @wraps(route_func)
-    async def wrapper(*args, request: Request, **kwargs):
-        limiter = _get_limiter(request)
-        settings = request.app.state.settings
-        decorated = limiter.limit(settings.rate_limit)(route_func)
-        return await decorated(*args, **kwargs)
-
-    return wrapper
-
-    return wrapper
 
 
 def _build_task_status_response(task_id: str, task: AsyncResult) -> TaskStatusResponse:
@@ -143,13 +133,18 @@ def _build_task_status_response(task_id: str, task: AsyncResult) -> TaskStatusRe
     return TaskStatusResponse(**data)
 
 
+settings = get_settings()
+
+
 @router.post("/compile", response_model=CompileResponse)
-@rate_limit_route
+@limiter.limit(lambda: settings.rate_limit)
 async def compile_document(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
+    limiter: Limiter = Depends(get_limiter),
     api_key: str = Depends(api_key_auth),
 ) -> CompileResponse:
+    assert limiter is not None
     try:
         task = compile_tex_task.apply_async(
             args=[
@@ -159,13 +154,13 @@ async def compile_document(
                 compile_request.engine,
                 compile_request.shell_escape,
                 compile_request.task_timeout,
-            ]
+            ],
+            headers={"request_id": request.state.request_id},
         )
+        fn = functools.partial(task.get, timeout=compile_request.task_timeout + 15)
         result_data = await asyncio.wait_for(
-            asyncio.get_running_loop().run_in_executor(
-                None, task.get, compile_request.task_timeout + 15
-            ),
-            timeout=compile_request.task_timeout + 15,
+            asyncio.get_running_loop().run_in_executor(None, fn),
+            timeout=compile_request.task_timeout + 20,
         )
     except CeleryError:
         logger.exception("Celery task failed")
@@ -173,7 +168,7 @@ async def compile_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Compilation failed while processing the request.",
         )
-    except TimeoutError:
+    except (asyncio.TimeoutError, concurrent.futures.TimeoutError):
         logger.exception("Unhandled compilation error")
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
@@ -190,12 +185,14 @@ async def compile_document(
 
 
 @router.post("/compile/async", response_model=TaskSubmissionResponse)
-@rate_limit_route
+@limiter.limit(lambda: settings.rate_limit)
 async def submit_compile_job(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
+    limiter: Limiter = Depends(get_limiter),
     api_key: str = Depends(api_key_auth),
 ) -> TaskSubmissionResponse:
+    assert limiter is not None
     task = compile_tex_task.apply_async(
         args=[
             compile_request.filename,
@@ -204,7 +201,8 @@ async def submit_compile_job(
             compile_request.engine,
             compile_request.shell_escape,
             compile_request.task_timeout,
-        ]
+        ],
+        headers={"request_id": request.state.request_id},
     )
     return TaskSubmissionResponse(task_id=task.id, state=task.state)
 

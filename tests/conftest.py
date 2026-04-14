@@ -14,6 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from latex_compile_service.app import app
 
 
+@pytest.fixture(autouse=True, scope="session")
+def reset_settings_cache():
+    from latex_compile_service.config import clear_settings_cache
+
+    clear_settings_cache()
+
+
 @pytest.fixture
 def client() -> TestClient:
     return TestClient(app)

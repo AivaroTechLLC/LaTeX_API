@@ -1,13 +1,37 @@
+import shutil
+from unittest.mock import AsyncMock, MagicMock
+
 from fastapi.testclient import TestClient
 
+import redis.asyncio as aioredis
 from latex_compile_service.app import app
 
 client = TestClient(app)
 
 
-def test_health_endpoint():
+def test_health_endpoint(monkeypatch):
+    mock_client = MagicMock()
+    mock_client.ping = AsyncMock(return_value=True)
+
+    class AsyncContextManager:
+        def __init__(self, obj):
+            self.obj = obj
+
+        async def __aenter__(self):
+            return self.obj
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr(aioredis, "from_url", lambda url: AsyncContextManager(mock_client))
+    monkeypatch.setattr(shutil, "which", lambda path: "latexmk")
+
     response = client.get("/api/v1/health")
     assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["redis"] == "ok"
+    assert payload["latexmk"] == "ok"
     assert response.json()["status"] == "ok"
 
 

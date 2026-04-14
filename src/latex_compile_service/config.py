@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     data_dir: Path = Field(Path("/app/data"))
     latexmk_binary: str = Field("latexmk")
+    cors_origins: list[str] = Field(["*"])
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -35,3 +36,7 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
+
+
+def clear_settings_cache() -> None:
+    get_settings.cache_clear()
