@@ -42,6 +42,19 @@ def compile_tex_task(
             shell_escape=shell_escape,
             timeout=timeout,
         )
+    except ValueError as exc:
+        logger.warning(
+            "Invalid input for LaTeX compile task %s [request_id=%s]: %s",
+            filename,
+            request_id,
+            exc,
+        )
+        return {
+            "status": "failure",
+            "pdf": None,
+            "log": str(exc),
+            "errors": [],
+        }
     except (OSError, MemoryError) as exc:
         logger.warning(
             "Retrying LaTeX compile task for %s [request_id=%s] after transient error: %s",

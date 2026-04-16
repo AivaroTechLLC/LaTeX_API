@@ -11,6 +11,9 @@ services:
         condition: service_started
       worker:
         condition: service_healthy
+    user: "999:999"
+    # Ensure host ./data ownership matches the container appuser.
+    # If needed: sudo chown -R 999:999 ./data
     volumes:
       - ./data:/app/data
     command: ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker latex_compile_service.main:app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --log-level info"]
@@ -32,6 +35,9 @@ services:
     depends_on:
       redis:
         condition: service_started
+    user: "999:999"
+    # Ensure host ./data ownership matches the container appuser.
+    # If needed: sudo chown -R 999:999 ./data
     volumes:
       - ./data:/app/data
     # Must be greater than COMPILE_TIMEOUT + task_time_limit buffer (currently 120 + 30 = 150s).
@@ -49,8 +55,12 @@ services:
   redis:
     image: redis:7-alpine
     container_name: latex-compile-service-redis
+    # Bind Redis only to localhost for development tooling.
+    # For pure production deployments this `ports:` mapping can be removed
+    # entirely because api and worker access Redis over the internal Docker
+    # bridge network by service name.
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

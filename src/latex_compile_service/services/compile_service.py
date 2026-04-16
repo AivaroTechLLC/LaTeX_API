@@ -164,15 +164,15 @@ class LatexCompiler:
             archive.extractall(destination)
 
         destination_resolved = destination.resolve()
-        try:
-            for root, dirs, files in os.walk(destination, topdown=True):
-                for name in dirs + files:
-                    path = Path(root) / name
-                    if not destination_resolved in path.resolve().parents and path.resolve() != destination_resolved:
-                        raise ValueError("ZIP archive contains illegal file paths.")
-        except Exception:
-            shutil.rmtree(destination)
-            raise
+        for root, dirs, files in os.walk(destination, topdown=True):
+            for name in dirs + files:
+                path = Path(root) / name
+                try:
+                    resolved = path.resolve()
+                except OSError:
+                    raise ValueError("ZIP archive contains illegal file paths.")
+                if destination_resolved not in resolved.parents and resolved != destination_resolved:
+                    raise ValueError("ZIP archive contains illegal file paths.")
 
     @staticmethod
     def _is_within_directory(directory: Path, target: Path) -> bool:

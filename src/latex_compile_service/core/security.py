@@ -14,7 +14,9 @@ def api_key_auth(
     x_api_key: str = Header(..., alias="X-API-Key"),
     settings: Settings = Depends(get_settings_dep),
 ) -> str:
-    if not x_api_key or not hmac.compare_digest(x_api_key, settings.api_key):
+    if not x_api_key or not hmac.compare_digest(
+        x_api_key.encode("utf-8"), settings.api_key.encode("utf-8")
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing API key.",

@@ -6,6 +6,7 @@ from celery.result import AsyncResult
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from celery.exceptions import CeleryError
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -197,9 +198,9 @@ async def submit_compile_job(
 
 @router.get("/compile/{task_id}", response_model=TaskStatusResponse)
 def get_compile_status(
-    task_id: str,
+    task_id: UUID,
     api_key: str = Depends(api_key_auth),
     settings: Settings = Depends(get_settings_dep),
 ) -> TaskStatusResponse:
-    task = AsyncResult(task_id, app=celery)
-    return _build_task_status_response(task_id, task)
+    task = AsyncResult(str(task_id), app=celery)
+    return _build_task_status_response(str(task_id), task)

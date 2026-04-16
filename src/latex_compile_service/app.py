@@ -36,6 +36,9 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version="0.1.0",
         description="Secure LaTeX compilation API with Celery background execution.",
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None,
+        openapi_url="/openapi.json" if settings.debug else None,
     )
     app.state.settings = settings
     app.state.request_counter = REQUEST_COUNTER
@@ -64,6 +67,7 @@ def create_app() -> FastAPI:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Cache-Control"] = "no-store"
+        response.headers["Content-Security-Policy"] = "default-src 'none'"
         return response
 
     def custom_openapi():

@@ -44,6 +44,16 @@ class Settings(BaseSettings):
             return [ext.strip() for ext in v.split(",") if ext.strip()]
         return v
 
+    @field_validator("api_key")
+    @classmethod
+    def api_key_must_not_be_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError(
+                "API_KEY must be set to a non-empty value. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        return v
+
     data_dir: Path = Field(Path("/app/data"))
     latexmk_binary: str = Field("latexmk")
     # Comma-separated list of allowed CORS origins.
