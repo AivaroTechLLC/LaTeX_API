@@ -29,5 +29,7 @@ celery.conf.update(
     worker_prefetch_multiplier=1,
     worker_max_tasks_per_child=100,
     broker_transport_options={"visibility_timeout": settings.compile_timeout + 60},
+    result_expires=settings.celery_result_expires,
+    result_compression="gzip",
     include=["latex_compile_service.tasks"],
 )

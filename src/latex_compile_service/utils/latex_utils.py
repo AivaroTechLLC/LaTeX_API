@@ -76,11 +76,18 @@ def parse_latex_errors(log: str) -> list[LaTeXError]:
             continue
 
         if line_context_match and previous_error is not None:
-            if previous_error.line is None:
-                previous_error.line = int(line_context_match.group("line"))
-            message_suffix = line_context_match.group("message").strip()
-            if message_suffix:
-                previous_error.message = f"{previous_error.message} {message_suffix}".strip()
+            new_line = previous_error.line
+            new_message = previous_error.message
+            if new_line is None:
+                new_line = int(line_context_match.group("line"))
+            suffix = line_context_match.group("message").strip()
+            if suffix:
+                new_message = f"{new_message} {suffix}".strip()
+            updated = previous_error.model_copy(
+                update={"line": new_line, "message": new_message}
+            )
+            errors[-1] = updated
+            previous_error = updated
             continue
 
         if text.startswith("!"):

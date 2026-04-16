@@ -9,7 +9,6 @@ from typing import Any
 
 from celery.exceptions import CeleryError
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
-from slowapi import Limiter
 from loguru import logger
 
 from latex_compile_service.api.dependencies import get_settings_dep
@@ -104,10 +103,6 @@ async def validate_compile_request(
     )
 
 
-def get_limiter(request: Request) -> Limiter:
-    return request.app.state.limiter
-
-
 def _build_task_status_response(task_id: str, task: AsyncResult) -> TaskStatusResponse:
     data: dict[str, Any] = {
         "task_id": task_id,
@@ -141,7 +136,6 @@ _RATE_LIMIT = get_settings().rate_limit
 async def compile_document(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
-    limiter: Limiter = Depends(get_limiter),
     api_key: str = Depends(api_key_auth),
 ) -> CompileResponse:
     try:
@@ -188,7 +182,6 @@ async def compile_document(
 async def submit_compile_job(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
-    limiter: Limiter = Depends(get_limiter),
     api_key: str = Depends(api_key_auth),
 ) -> TaskSubmissionResponse:
     task = compile_tex_task.apply_async(

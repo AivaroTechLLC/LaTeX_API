@@ -103,7 +103,8 @@ Returns Prometheus-style metrics.
 ## Security notes
 
 - `shell_escape` is disabled by default for safety.
-- The service runs inside a container and should be deployed behind a gateway or API proxy.
+- The service runs inside a container and should be deployed behind a single trusted reverse proxy or gateway.
+- Rate limiting relies on client IP information from `X-Forwarded-For` or `X-Real-IP` headers, so the proxy must be trusted and configured to forward the original client IP.
 - Use a secure `API_KEY` and do not commit `.env` to Git.
 - File uploads are validated for size and allowed extensions.
 

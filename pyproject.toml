@@ -36,6 +36,13 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
     "httpx>=0.26.0",
     "pre-commit>=3.4.0"
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--tb=short -q --cov=latex_compile_service --cov-report=term-missing --cov-fail-under=70"

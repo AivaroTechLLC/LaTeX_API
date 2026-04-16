@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     compile_timeout: int = Field(120)
     max_memory_mb: int = Field(512)
     max_log_chars: int = Field(100_000)
+    celery_result_expires: int = Field(3600)
+    trusted_proxy_ips: list[str] = Field([])
     rate_limit: str = Field("20/minute")
     default_engine: str = Field("pdflatex")
     allow_shell_escape: bool = Field(False)
@@ -51,6 +53,13 @@ class Settings(BaseSettings):
     def parse_cors_origins(cls, v):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    @field_validator("trusted_proxy_ips", mode="before")
+    @classmethod
+    def parse_trusted_proxy_ips(cls, v):
+        if isinstance(v, str):
+            return [ip.strip() for ip in v.split(",") if ip.strip()]
         return v
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

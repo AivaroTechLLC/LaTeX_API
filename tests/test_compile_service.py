@@ -14,6 +14,8 @@ from latex_compile_service.services.compile_service import LatexCompiler
 class DummySettings:
     latexmk_binary = "latexmk"
     compile_timeout = 120
+    max_memory_mb = 512
+    max_log_chars = 100_000
 
 
 def test_run_latexmk_missing_binary_returns_failure(monkeypatch):

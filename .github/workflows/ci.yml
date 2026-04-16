@@ -21,6 +21,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify .env.example exists
+        run: test -s .env.example
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -36,7 +39,7 @@ jobs:
       - name: Run tests
         env:
           API_KEY: replace-with-secure-key
-        run: pytest --tb=short -q
+        run: pytest
 
   docker-build:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

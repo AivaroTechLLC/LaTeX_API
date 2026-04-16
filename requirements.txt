@@ -10,3 +10,5 @@ prometheus-client>=0.16.0
 pydantic>=2.6.0
 pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=5.0.0

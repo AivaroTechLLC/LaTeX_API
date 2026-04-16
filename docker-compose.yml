@@ -34,7 +34,10 @@ services:
         condition: service_started
     volumes:
       - ./data:/app/data
-    command: /opt/venv/bin/celery -A latex_compile_service.celery_app.celery worker --loglevel=info --concurrency=1
+    # Must be greater than COMPILE_TIMEOUT + task_time_limit buffer (currently 120 + 30 = 150s).
+    # Update this value if COMPILE_TIMEOUT is increased in .env.
+    stop_grace_period: 150s
+    command: /opt/venv/bin/celery -A latex_compile_service.celery_app.celery worker --loglevel=info --concurrency=1 --without-gossip --without-mingle --without-heartbeat
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "/opt/venv/bin/celery -A latex_compile_service.celery_app.celery inspect ping -d celery@$$HOSTNAME || exit 1"]
