@@ -128,11 +128,8 @@ def _build_task_status_response(task_id: str, task: AsyncResult) -> TaskStatusRe
     return TaskStatusResponse(**data)
 
 
-_RATE_LIMIT = get_settings().rate_limit
-
-
 @router.post("/compile", response_model=CompileResponse)
-@limiter.limit(_RATE_LIMIT)
+@limiter.limit(lambda: get_settings().rate_limit)
 async def compile_document(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),
@@ -178,7 +175,7 @@ async def compile_document(
 
 
 @router.post("/compile/async", response_model=TaskSubmissionResponse)
-@limiter.limit(_RATE_LIMIT)
+@limiter.limit(lambda: get_settings().rate_limit)
 async def submit_compile_job(
     request: Request,
     compile_request: CompileRequest = Depends(validate_compile_request),

@@ -9,6 +9,7 @@ from prometheus_client import generate_latest
 
 from latex_compile_service.api.dependencies import get_settings_dep
 from latex_compile_service.config import Settings
+from latex_compile_service.core.security import api_key_auth
 
 router = APIRouter()
 
@@ -54,7 +55,10 @@ async def health(settings: Settings = Depends(get_settings_dep)) -> JSONResponse
 
 
 @router.get("/metrics", response_class=PlainTextResponse)
-def metrics(settings: Settings = Depends(get_settings_dep)) -> str:
+def metrics(
+    settings: Settings = Depends(get_settings_dep),
+    api_key: str = Depends(api_key_auth),
+) -> str:
     if not settings.enable_prometheus:
         return "# Prometheus metrics are disabled.\n"
 

@@ -46,7 +46,10 @@ class Settings(BaseSettings):
 
     data_dir: Path = Field(Path("/app/data"))
     latexmk_binary: str = Field("latexmk")
-    cors_origins: list[str] = Field(["*"])
+    # Comma-separated list of allowed CORS origins.
+    # Set to "*" only for fully public, read-only APIs.
+    # For this service, set explicitly in .env (e.g. CORS_ORIGINS=https://yourapp.com)
+    cors_origins: list[str] = Field([])
 
     @field_validator("cors_origins", mode="before")
     @classmethod

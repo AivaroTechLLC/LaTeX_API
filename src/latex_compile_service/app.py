@@ -57,6 +57,15 @@ def create_app() -> FastAPI:
 
     api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
 
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     def custom_openapi():
         if app.openapi_schema:
             return app.openapi_schema

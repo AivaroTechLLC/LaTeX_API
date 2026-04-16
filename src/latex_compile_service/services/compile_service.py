@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import base64
+import os
+import shutil
 import subprocess
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -48,7 +51,7 @@ class LatexCompiler:
                 shell_escape=shell_escape,
                 timeout=timeout,
             )
-            pdf_path = workspace_path / main_file.with_suffix(".pdf").name
+            pdf_path = main_file.parent / main_file.with_suffix(".pdf").name
             pdf_b64 = None
             if pdf_path.exists():
                 pdf_b64 = base64.b64encode(pdf_path.read_bytes()).decode("utf-8")
@@ -91,13 +94,17 @@ class LatexCompiler:
             command.append("-shell-escape")
 
         try:
+            kwargs: dict[str, Any] = {}
+            if sys.platform != "win32":
+                kwargs["preexec_fn"] = self._limit_resources
+
             completed = subprocess.run(
                 command,
                 cwd=workspace,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                preexec_fn=self._limit_resources,
+                **kwargs,
             )
             log_output = completed.stdout + "\n" + completed.stderr
             return {
@@ -155,6 +162,17 @@ class LatexCompiler:
                 if not self._is_within_directory(destination, target_path):
                     raise ValueError("ZIP archive contains illegal file paths.")
             archive.extractall(destination)
+
+        destination_resolved = destination.resolve()
+        try:
+            for root, dirs, files in os.walk(destination, topdown=True):
+                for name in dirs + files:
+                    path = Path(root) / name
+                    if not destination_resolved in path.resolve().parents and path.resolve() != destination_resolved:
+                        raise ValueError("ZIP archive contains illegal file paths.")
+        except Exception:
+            shutil.rmtree(destination)
+            raise
 
     @staticmethod
     def _is_within_directory(directory: Path, target: Path) -> bool:
